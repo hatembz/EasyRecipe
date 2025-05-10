@@ -84,7 +84,12 @@ class RecipeDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
-          SliverToBoxAdapter(child: StepPageView(steps: recipe.cookingSteps)),
+          SliverToBoxAdapter(
+            child: StepPageView(
+              recipeId: recipe.id!,
+              steps: recipe.cookingSteps,
+            ),
+          ),
         ],
       ),
     );

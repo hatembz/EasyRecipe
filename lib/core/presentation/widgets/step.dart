@@ -1,16 +1,24 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 class StepPageView extends StatefulWidget {
+  final String recipeId;
   final List<String> steps;
-  const StepPageView({super.key, required this.steps});
+
+  const StepPageView({
+    super.key,
+    required this.recipeId,
+    required this.steps,
+  });
 
   @override
-  State<StepPageView> createState() => _StepPageViewState();
+  State<StepPageView> createState() => StepPageViewState();
 }
 
-class _StepPageViewState extends State<StepPageView> {
+class StepPageViewState extends State<StepPageView> {
   int _currentPage = 0;
   late final PageController _controller;
+  final _functions = FirebaseFunctions.instance;
 
   @override
   void initState() {
@@ -24,6 +32,21 @@ class _StepPageViewState extends State<StepPageView> {
     super.dispose();
   }
 
+  Future<void> _trackStepProgress(int step) async {
+    try {
+      debugPrint('Tracking step progress: ${step + 1}/${widget.steps.length} for recipe ${widget.recipeId}');
+      final result = await _functions.httpsCallable('trackRecipeStep').call({
+        'recipeId': widget.recipeId,
+        'currentStep': step + 1,
+        'totalSteps': widget.steps.length,
+      });
+      debugPrint('Step progress tracked successfully: ${result.data}');
+    } catch (e, stackTrace) {
+      debugPrint('Failed to track step progress: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -35,6 +58,7 @@ class _StepPageViewState extends State<StepPageView> {
             itemCount: widget.steps.length,
             onPageChanged: (index) {
               setState(() => _currentPage = index);
+              _trackStepProgress(index);
             },
             itemBuilder: (context, index) {
               return Card(
@@ -70,12 +94,22 @@ class _StepPageViewState extends State<StepPageView> {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: _currentPage > 0 ? () => _controller.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.ease) : null,
+              onPressed: _currentPage > 0
+                  ? () => _controller.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.ease,
+                      )
+                  : null,
             ),
             Text('Step ${_currentPage + 1} of ${widget.steps.length}'),
             IconButton(
               icon: const Icon(Icons.arrow_forward),
-              onPressed: _currentPage < widget.steps.length - 1 ? () => _controller.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.ease) : null,
+              onPressed: _currentPage < widget.steps.length - 1
+                  ? () => _controller.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.ease,
+                      )
+                  : null,
             ),
           ],
         ),
