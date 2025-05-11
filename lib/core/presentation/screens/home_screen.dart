@@ -18,8 +18,9 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<RecipeCubit>().addSampleRecipes();
+            onPressed: () async {
+              await context.read<RecipeCubit>().addSampleRecipes();
+              await context.read<RecipeCubit>().loadRecipes();
             },
             tooltip: 'Add Sample Recipes',
           ),
@@ -27,11 +28,7 @@ class HomeScreen extends StatelessWidget {
       ),
       body: BlocBuilder<RecipeCubit, RecipeState>(
         builder: (context, state) {
-          if (state is RecipeLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+          if (state is RecipeLoading) return const Center(child: CircularProgressIndicator());
 
           if (state is RecipeError) {
             return Center(
@@ -44,18 +41,14 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () {
-                      context.read<RecipeCubit>().loadRecipes();
-                    },
+                    onPressed: () => context.read<RecipeCubit>().loadRecipes(),
                     child: const Text('Retry'),
                   ),
                 ],
               ),
             );
-          }
-
-          if (state is RecipeLoaded) {
-            if (state.recipes.isEmpty) {
+          } else {
+            if (context.read<RecipeCubit>().recipes.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -77,99 +70,94 @@ class HomeScreen extends StatelessWidget {
               );
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: state.recipes.length,
-              itemBuilder: (context, index) {
-                final recipe = state.recipes[index];
-                return Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RecipeDetailsScreen(
-                            recipe: recipe,
-                          ),
-                        ),
-                      );
-                    },
-                    onLongPress: () => _editRecipe(context, recipe),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(4),
-                          ),
-                          child: Image.network(
-                            recipe.imageUrl,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 200,
-                                color: Colors.grey[300],
-                                child: const Icon(
-                                  Icons.error_outline,
-                                  size: 50,
-                                  color: Colors.grey,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                recipe.name,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
+            return RefreshIndicator(
+              onRefresh: () => context.read<RecipeCubit>().loadRecipes(),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: context.read<RecipeCubit>().recipes.length,
+                itemBuilder: (context, index) {
+                  final recipe = context.read<RecipeCubit>().recipes[index];
+                  return Card(
+                    elevation: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => RecipeDetailsScreen(recipe: recipe)),
+                        );
+                      },
+                      onLongPress: () => _editRecipe(context, recipe),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                            child: Image.network(
+                              recipe.imageUrl,
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 200,
+                                  color: Colors.grey[300],
+                                  child: Center(
+                                    child: const Icon(
+                                      Icons.error_outline,
+                                      size: 200,
+                                      color: Colors.grey,
                                     ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                recipe.description,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(Icons.timer, size: 16),
-                                  const SizedBox(width: 4),
-                                  Text('${recipe.cookingTime} mins'),
-                                  const SizedBox(width: 16),
-                                  const Icon(Icons.people, size: 16),
-                                  const SizedBox(width: 4),
-                                  Text('${recipe.servings} servings'),
-                                  const SizedBox(width: 16),
-                                  const Icon(Icons.format_list_numbered, size: 16),
-                                  const SizedBox(width: 4),
-                                  Text('${recipe.cookingSteps.length} steps'),
-                                ],
-                              ),
-                            ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  recipe.name,
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  recipe.description,
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.timer, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text('${recipe.cookingTime} mins'),
+                                    const SizedBox(width: 16),
+                                    const Icon(Icons.people, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text('${recipe.servings} servings'),
+                                    const SizedBox(width: 16),
+                                    const Icon(Icons.format_list_numbered, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text('${recipe.cookingSteps.length} steps'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             );
           }
-
-          return const Center(
-            child: Text('Something went wrong'),
-          );
         },
       ),
       floatingActionButton: FloatingActionButton(

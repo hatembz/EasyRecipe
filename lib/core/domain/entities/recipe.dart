@@ -6,6 +6,7 @@ class Recipe {
   final List<String> cookingSteps;
   final int cookingTime;
   final int servings;
+  final int progress;
 
   Recipe({
     this.id,
@@ -15,6 +16,7 @@ class Recipe {
     required this.cookingSteps,
     required this.cookingTime,
     required this.servings,
+    this.progress = 0,
   });
 
   Recipe copyWith({
@@ -25,6 +27,7 @@ class Recipe {
     List<String>? cookingSteps,
     int? cookingTime,
     int? servings,
+    int? progress,
   }) {
     return Recipe(
       id: id ?? this.id,
@@ -34,6 +37,7 @@ class Recipe {
       cookingSteps: cookingSteps ?? this.cookingSteps,
       cookingTime: cookingTime ?? this.cookingTime,
       servings: servings ?? this.servings,
+      progress: progress ?? this.progress,
     );
   }
 
@@ -45,6 +49,7 @@ class Recipe {
       'cookingSteps': cookingSteps,
       'cookingTime': cookingTime,
       'servings': servings,
+      'progress': progress,
     };
   }
 
@@ -57,6 +62,7 @@ class Recipe {
       cookingSteps: List<String>.from(json['cookingSteps'] as List),
       cookingTime: json['cookingTime'] as int,
       servings: json['servings'] as int,
+      progress: json['progress'] as int? ?? 0,
     );
   }
 }

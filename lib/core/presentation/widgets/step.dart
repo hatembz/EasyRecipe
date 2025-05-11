@@ -1,49 +1,51 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:easy_recipe/core/domain/entities/recipe.dart';
+import 'package:easy_recipe/core/presentation/cubits/recipe_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class StepPageView extends StatefulWidget {
-  final String recipeId;
-  final List<String> steps;
+  final Recipe recipe;
 
-  const StepPageView({
-    super.key,
-    required this.recipeId,
-    required this.steps,
-  });
+  const StepPageView({super.key, required this.recipe});
 
   @override
-  State<StepPageView> createState() => StepPageViewState();
+  State<StepPageView> createState() => _StepPageViewState();
 }
 
-class StepPageViewState extends State<StepPageView> {
-  int _currentPage = 0;
-  late final PageController _controller;
-  final _functions = FirebaseFunctions.instance;
+class _StepPageViewState extends State<StepPageView> {
+  late final PageController _pageController;
+  late int _currentStep;
 
   @override
   void initState() {
     super.initState();
-    _controller = PageController();
+    // Initialize with the recipe's progress
+    _currentStep = widget.recipe.progress;
+    _pageController = PageController(initialPage: _currentStep);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  Future<void> _trackStepProgress(int step) async {
+  Future<void> _trackStepProgress() async {
+    if (!mounted) return;
     try {
-      debugPrint('Tracking step progress: ${step + 1}/${widget.steps.length} for recipe ${widget.recipeId}');
-      final result = await _functions.httpsCallable('trackRecipeStep').call({
-        'recipeId': widget.recipeId,
-        'currentStep': step + 1,
-        'totalSteps': widget.steps.length,
-      });
-      debugPrint('Step progress tracked successfully: ${result.data}');
-    } catch (e, stackTrace) {
-      debugPrint('Failed to track step progress: $e');
-      debugPrint('Stack trace: $stackTrace');
+      await context.read<RecipeCubit>().trackStepProgress(
+            recipeId: widget.recipe.id ?? '',
+            currentStep: _currentStep,
+            totalSteps: widget.recipe.cookingSteps.length,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to track progress: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -54,35 +56,29 @@ class StepPageViewState extends State<StepPageView> {
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.25,
           child: PageView.builder(
-            controller: _controller,
-            itemCount: widget.steps.length,
+            controller: _pageController,
+            itemCount: widget.recipe.cookingSteps.length,
             onPageChanged: (index) {
-              setState(() => _currentPage = index);
-              _trackStepProgress(index);
+              setState(() => _currentStep = index);
+              _trackStepProgress();
             },
             itemBuilder: (context, index) {
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        child: Text(
-                          '${index + 1}',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        widget.steps[index],
-                        style: Theme.of(context).textTheme.bodyLarge,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+              final step = widget.recipe.cookingSteps[index];
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Step ${index + 1}',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      step,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
                 ),
               );
             },
@@ -94,18 +90,18 @@ class StepPageViewState extends State<StepPageView> {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: _currentPage > 0
-                  ? () => _controller.previousPage(
+              onPressed: _currentStep > 0
+                  ? () => _pageController.previousPage(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.ease,
                       )
                   : null,
             ),
-            Text('Step ${_currentPage + 1} of ${widget.steps.length}'),
+            Text('Step ${_currentStep + 1} of ${widget.recipe.cookingSteps.length}'),
             IconButton(
               icon: const Icon(Icons.arrow_forward),
-              onPressed: _currentPage < widget.steps.length - 1
-                  ? () => _controller.nextPage(
+              onPressed: _currentStep < widget.recipe.cookingSteps.length - 1
+                  ? () => _pageController.nextPage(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.ease,
                       )

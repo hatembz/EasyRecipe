@@ -10,7 +10,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MyApp());
+  runApp(BlocProvider(
+    create: (context) => RecipeCubit(RecipeRepositoryImpl(FirebaseFirestore.instance)),
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -24,12 +27,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: BlocProvider(
-        create: (context) => RecipeCubit(
-          RecipeRepositoryImpl(FirebaseFirestore.instance),
-        ),
-        child: const HomeScreen(),
-      ),
+      home: const HomeScreen(),
     );
   }
 }

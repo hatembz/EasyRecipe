@@ -18,22 +18,30 @@ class RecipeDetailsScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
+            leading: IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                shape: const CircleBorder(),
+              ),
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back),
+            ),
             expandedHeight: MediaQuery.of(context).size.height * 0.25,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
               background: Image.network(
                 recipe.imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Icon(
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: Icon(
                       Icons.error_outline,
                       size: 50,
                       color: Colors.grey,
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ),
@@ -84,12 +92,7 @@ class RecipeDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: StepPageView(
-              recipeId: recipe.id!,
-              steps: recipe.cookingSteps,
-            ),
-          ),
+          SliverToBoxAdapter(child: StepPageView(recipe: recipe)),
         ],
       ),
     );

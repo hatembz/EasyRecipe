@@ -78,7 +78,10 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
         actions: [
           if (widget.recipe != null)
             IconButton(
-              icon: const Icon(Icons.delete),
+              icon: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
               onPressed: () {
                 Navigator.pop(context, 'delete');
               },
